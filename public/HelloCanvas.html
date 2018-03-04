@@ -1,21 +1,81 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>
-            HelloCanvas
-        </title>
-    </head>
-    <body>
-        <p>颜色：</p>
-        <select id="color">
-            <option value="red">红</option>
-            <option value="green">绿</option>
-            <option value="blue">蓝</option>
-            <option value="yellow">黄</option>
-            <option value="black">黑</option>
-        </select>
-        <div id = "div1" style = "border:1px solid #000;width:1300px;height:500px;margin:0 auto; margin-top:20px;"></div>
-        
-    </body>
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        HelloCanvas
+    </title>
+</head>
+
+<body>
+    <a>选择颜色：</a>
+    <select id="color">
+        <option value="red">红</option>
+        <option value="green">绿</option>
+        <option value="blue">蓝</option>
+        <option value="yellow">黄</option>
+        <option value="black">黑</option>
+    </select>
+    <a>选择画笔:</a>
+    <select id="kind">
+        <option value="1">画曲线</option>
+        <option value="2">画矩形</option>
+    </select>
+    <a>
+        <button onclick="clearCanvas()">清空画布</button>
+    </a>
+    <div id="div1" style="border:2px solid #000;width:900px;height:600px;margin:0 auto; margin-top:10px;"></div>
+    <!-- div作为canvas的容器 -->
+    <script>
+        var canvas = document.createElement("canvas");
+        document.getElementById("div1").appendChild(canvas);
+        canvas.width = 900;
+        canvas.height = 600;            //动态创建canvas标签，并设置它的属性
+
+        var context = canvas.getContext("2d");
+        var paint;
+        var kind;
+        var x1, y1, x2, y2;
+
+        function setDrawPen() {         //设置画笔的颜色及类型
+            context.strokeStyle = document.getElementById("color").value;
+            context.lineWidth = 1;
+            kind = parseInt(document.getElementById("kind").value)
+        }
+        function clearCanvas() {        //清空画布
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        canvas.onmousedown = function (e) {     
+            paint = true;
+            setDrawPen();
+            context.beginPath();
+            if (kind == 1) {           //当画曲线时，这里只画了一个点
+                context.moveTo(e.pageX - this.offsetLeft - 1, e.pageY - this.offsetTop - 1);
+                context.lineTo(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+                context.stroke();
+            }
+            if (kind == 2) {           //当画矩形时
+                x1 = e.pageX - this.offsetLeft;
+                y1 = e.pageY - this.offsetTop;
+            }
+        }
+        canvas.onmousemove = function (e) {
+            if (paint && kind == 1) {        //当画曲线时，这里画了随鼠标移动而产生的曲线
+                context.lineTo(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+                context.stroke();
+            }
+        }
+        canvas.onmouseup = function (e) {
+            paint = false;
+            if (kind == 2) {                //当画矩形时
+                x2 = e.pageX - this.offsetLeft;
+                y2 = e.pageY - this.offsetTop;
+                context.strokeRect(x1, y1, x2-x1, y2-y1);
+            }
+            context.closePath();
+        }
+    </script>
+</body>
+
 </html>
