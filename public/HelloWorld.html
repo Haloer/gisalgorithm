@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>
-            Hello World
-        </title>
-    </head>
-    <body>
-        <h1>My Hello World</h1>
-        <p id="p1">使用JavaScript动态创建HelloWorld</p>
-        <script>
-            document.getElementById("p1").innerHTML="Hello World!";
-        </script>
-    </body>
+
+<head>
+    <title>
+        Hello World
+    </title>
+</head>
+
+<body>
+    <p>使用JavaScript动态创建HelloWorld</p>
+    <div id="div1"></div>
+    <script>
+        var h1 = document.createElement("h1");
+        var node = document.createTextNode("Hello World!");
+        h1.appendChild(node);
+        document.getElementById("div1").appendChild(h1);
+    </script>
+</body>
+
 </html>
