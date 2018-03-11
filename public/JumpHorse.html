@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>跳马问题</title>
+	</head>
+
+	<body>
+		<table cellspacing="14">
+			<tr>
+				<td>棋盘行数</td>
+				<td><input type="text" id="rows" name="rows"></td>
+			</tr>
+			<tr>
+				<td>棋盘列数</td>
+				<td><input type="text" id="cols"></td>
+			</tr>
+			<tr>
+				<td>起始X坐标</td>
+				<td><input type="text" id="startX"></td>
+			</tr>
+			<tr>
+				<td>起始Y坐标</td>
+				<td><input type="text" id="startY"></td>
+			</tr>
+		</table>
+
+		<button type="button" onclick="GetValue();StartGame();" style="width:90px;height:35px;margin-top:10px; border:1px solid; background:#FFF; font-size:14px">开始计算</button>
+
+		<script>
+			var startX = null,
+				startY = null,
+				rows = null,
+				cols = null;
+
+			//方向数组
+			var direction = new Array([2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]);
+
+			//记录总方法数量
+			var number = 0;
+
+			function CheckPut(desk, x, y) {
+				if(x >= rows || y >= cols || x < 0 || y < 0)
+					return false;
+				if(desk[x][y] != 0)
+					return false;
+				return true;
+			}
+
+			function PrintDesk(desk) {
+				for(var i = 0; i < rows; i += 1) {
+					for(var j = 0; j < cols; j += 1) {
+						if(i == startX && j == startY)
+							document.write("# ");
+						else
+							document.write(desk[i][j] + " ");
+					}
+					document.write("<br/>");
+				}
+			}
+
+			function CheckBoundry(desk) {
+				for(var i = 0; i < rows; i += 1) {
+					if(desk[i][0] != 0)
+						return true;
+				}
+
+				for(var i = 0; i < rows; i += 1) {
+					if(desk[i][cols - 1] != 0)
+						return true;
+				}
+
+				for(var j = 0; j < cols; j += 1) {
+					if(desk[0][j] != 0)
+						return true;
+				}
+
+				for(var j = 0; j < cols; j += 1) {
+					if(desk[rows - 1][j] != 0)
+						return true;
+				}
+
+				return false;
+			}
+
+			function SearchPath(desk, x, y, count) {
+				if(x == startX && y == startY && count > 1) {
+					if(CheckBoundry(desk)) {
+						number++;
+						document.write("存在第" + number + "种方法：<br/>");
+						PrintDesk(desk);
+						document.write("<br/>");
+					}
+					return;
+				}
+
+				desk[x][y] = count;
+
+				for(var dir = 0; dir < 8; dir += 1) {
+					if(CheckPut(desk, x + direction[dir][0], y + direction[dir][1])) {
+						SearchPath(desk, x + direction[dir][0], y + direction[dir][1], count + 1);
+						desk[x + direction[dir][0]][y + direction[dir][1]] = 0;
+					}
+				}
+			}
+
+			function GetValue() {
+				//起始位置为（startX,startY）,棋盘大小为rows*cols		
+				if(document.getElementById('startX').value != "")
+					startX = parseInt(document.getElementById('startX').value);
+				else {
+					alert('请在文本框输入正确的值！');
+					return;
+				}
+				if(document.getElementById('startY').value != "")
+					startY = parseInt(document.getElementById('startY').value);
+				else {
+					alert('请在文本框输入正确的值！');
+					return;
+				}
+				if(document.getElementById('rows').value != "")
+					rows = parseInt(document.getElementById('rows').value);
+				else {
+					alert('请在文本框输入正确的值！');
+					return;
+				}
+				if(document.getElementById('cols').value != "")
+					cols = parseInt(document.getElementById('cols').value);
+				else {
+					alert('请在文本框输入正确的值！');
+					return;
+				}
+
+				//进行数据的检验
+				if(rows <= startX) {
+					alert('马不在棋盘上！请重新输入！');
+					return;
+				}
+				if(cols <= startY) {
+					alert('马不在棋盘上！请重新输入！');
+					return;
+				}
+
+			}
+
+			function StartGame() {
+				//创建棋盘
+				var desk = new Array();
+				for(var i = 0; i < rows; i += 1) {
+					desk[i] = new Array();
+					for(var j = 0; j < cols; j += 1)
+						desk[i][j] = 0;
+				}
+
+				SearchPath(desk, startX, startY, 0);
+				if(number == 0)
+					alert('不存在路径！');
+			}
+		</script>
+	</body>
+
+</html>
