@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>DrawMyName</title>
+</head>
+
+<body onload="DrawDesk()">
+	<a style="font-size:16px;">文件路径 >>> </a>
+	<input type="file" id="file" multiple="mutifile" style="width:160px;height:25px;" />
+	<a style="font-size:13px;color:grey">
+		<输入gen格式的txt数据，并且按照字顺序命名文件，不得超过3个文件>
+	</a>
+	<br/>
+	<a style="font-size:16px;margin-top:8px;">画笔设置 >>> </a>
+	<a style="font-size:16px;margin-top:8px;">颜色：</a>
+	<select id="color" style="width:70px;">
+		<option value="red">Red</option>
+		<option value="blue">Blue</option>
+		<option value="green">Green</option>
+		<option value="black">Black</option>
+		<option value="yellow">Yellow</option>
+	</select>
+	<a style="margin-left:10px;margin-top:8px;">宽度：</a>
+	<input id="wid" style="width:30px;margin-top:8px;" />
+	<button class="btn" onclick="setStart()">显示</button>
+	<button class="btn" s onclick="clearCanvas();DrawDesk()">清空</button>
+	<button class="btn" onclick="setStart()">还原</button>
+	<br/>
+	<canvas id="canvas" style="border:1px solid #000;margin-top:20px;"></canvas>
+	<script>
+		var canvas = document.getElementById('canvas');
+		var ctx = canvas.getContext('2d');
+		canvas.width = 1280;
+		canvas.height = 500;
+
+		var startX = 50; //起始位置X
+		var startY = 50; //起始位置Y
+		var number = 3; //字数目
+		var a = 20; //网格边长
+		var dis = 80; //网格间隔
+		var tan15 = 2 - Math.sqrt(3);
+		var PI = 3.1415926;
+
+		function setStart() {
+			startX = 50;
+			startY = 50;
+			a = 20;
+			dis = 80;
+			clearCanvas();
+			DrawDesk();
+			GetName();
+		}
+
+		//清空画布
+		function clearCanvas() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+
+		//画棋盘
+		function DrawDesk() {
+			//棋盘的第一个字起始点为(40,70)，第二个为(40+400,70),依次类推
+			for (var k = 0; k < number; k++) {
+				//画纵线
+				for (var i = 0; i < 16; i++) {
+					ctx.strokeStyle = "grey";
+					ctx.lineWidth = parseInt(1);
+					ctx.beginPath();
+					var x1 = a * i;
+					var y1 = 0;
+					var x2 = a * i;
+					var y2 = a * 15;
+					var x3 = x1,
+						y3 = y1,
+						x4 = x2,
+						y4 = y2;
+					ctx.moveTo(startX + k * (a * 15 + dis) + x3, y3 + startY);
+					ctx.lineTo(startX + k * (a * 15 + dis) + x4, y4 + startY);
+					ctx.stroke();
+				}
+
+				//画横线
+				for (var i = 0; i < 16; i++) {
+					ctx.strokeStyle = "grey";
+					ctx.lineWidth = parseInt(1);
+					ctx.beginPath();
+					var x1 = 0;
+					var y1 = a * i;
+					var x2 = a * 15;
+					var y2 = a * i;
+					var x3 = x1,
+						y3 = y1,
+						x4 = x2,
+						y4 = y2;
+					ctx.moveTo(startX + k * (a * 15 + dis) + x3, startY + y3);
+					ctx.lineTo(startX + k * (a * 15 + dis) + x4, startY + y4);
+					ctx.stroke();
+				}
+			}
+		}
+
+		//读名字
+		function GetName() {
+			var files = document.getElementById('file').files;
+			for (var i = 0; i < files.length; i++) {
+				var file = files[i];
+				var reader = new FileReader();
+				var content = null;
+				reader.readAsText(file);
+				var n = 0;
+				reader.onload = function (e) {
+					content = this.result;
+					DrawName(content, n);
+					n++;
+				}
+			}
+		}
+
+		//写名字
+		function DrawName(content, i) {
+			var lines = content.split('\r\n');
+			var count = 0;
+			ctx.strokeStyle = document.getElementById('color').value;
+			ctx.lineWidth = document.getElementById('wid').value;
+			for (var j = 0; j < lines.length; j++) {
+				var str = lines[j];
+				if (str == 'END') {
+					ctx.stroke();
+					count = 0;
+					continue;
+				}
+				var point = str.split(',');
+				if (point.length < 2) {
+					count = 1;
+					continue;
+				}
+				if (count == 1) {
+					ctx.beginPath();
+					var x = point[0] * a;
+					var y = point[1] * a;
+					var x0 = x,
+						y0 = y;
+					ctx.moveTo(x0 + startX + (a * 15 + dis) * i, y0 + startY);
+					count++;
+				} else {
+					var x = point[0] * a;
+					var y = point[1] * a;
+					var x0 = x,
+						y0 = y;
+					ctx.lineTo(x0 + startX + (a * 15 + dis) * i, y0 + startY);
+				}
+			}
+		}
+	</script>
+</body>
+
+</html>
