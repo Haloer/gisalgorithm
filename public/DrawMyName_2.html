@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>DrawMyName</title>
+	</head>
+
+	<body onload="DrawDesk()">
+		<a style="font-size:16px;">选择文件：</a>
+		<input type="file" id="file" multiple="multiple" style="width:160px;height:25px;" />
+		<a style="margin-left: 5px;margin-right: 5px;">||</a>
+		<a style="font-size:16px;">对canvas的操作：</a>
+		<button class="btn" onclick="setStart()">显示</button>
+		<button class="btn" s onclick="clearCanvas();DrawDesk()">清空</button>
+		<button class="btn" onclick="setStart()">还原</button>
+		<br/>
+		<div>
+			<a style="font-size:16px;margin-top:8px;">名字变换：</a>
+			<button onclick="LeftSlant()">左斜</button>
+			<a style="margin-left: 5px;margin-right: 5px;">||</a>
+			<button onclick="SongJian()">耸肩</button>
+			<a style="margin-left: 5px;margin-right: 5px;">||</a>
+			<button onclick="Enlarge()" style="margin-top: 8px;">放大</button>
+			<button onclick="Reduce()" style="margin-top: 8px;">缩小</button>
+			<input id="times" style="width: 30px;" />
+			<a>倍</a>
+			<a style="margin-left: 5px;margin-right: 5px;">||</a>
+			<button onclick="ClockwiseRotate()" style="margin-top: 8px;">顺时针旋转</button>
+			<button onclick="AnticlockwiseRotate()" style="margin-top: 8px;">逆时针旋转</button>
+			<input id="tangle" style="width: 30px;" />
+			<a>°</a>
+			<br />
+			<a style="margin-left: 85px;margin-right: 5px;">||</a>
+			<button onclick="LeftRightSymmetric()">左右中心对称</button>
+			<button onclick="UpDownSymmetric()">上下中心对称</button>
+			<a style="margin-left: 5px;margin-right: 5px;">||</a>
+			<button style="margin-top: 8px;" onclick="panLeft()">左移</button>
+			<button style="margin-top: 8px;" onclick="panRight()">右移</button>
+			<button style="margin-top: 8px;" onclick="panUp()">上移</button>
+			<button style="margin-top: 8px;" onclick="panDown()">下移</button>
+			<input id="length" style="width:30px;" />
+			<a>px</a>
+		</div>
+		<canvas id="canvas" style="border:1px solid #000;margin-top:20px;"></canvas>
+		<script>
+			var canvas = document.getElementById('canvas');
+			var ctx = canvas.getContext('2d');
+			canvas.width = 1100;
+			canvas.height = 500; //设置canvas的属性
+
+			var startX = 50; //第一个网格的左上角坐标X
+			var startY = 50; //第一个网格的左上角坐标Y
+			var number = 3; //网格的数量
+			var a = 20; //小格子的边长
+			var dis = 40; //每个大网格之间的间隔
+			var tan15 = 2 - Math.sqrt(3);
+			var PI = 3.1415926;
+
+			var leftslant = false;
+			var songjian = false;
+			var leftright = false;
+			var updown = false;
+			var clockwise = false;
+			var anticlockwise = false;
+
+			function setStart() {
+				startX = 50;
+				startY = 50;
+				a = 20;
+				dis = 40;
+				leftslant = false;
+				songjian = false;
+				leftright = false;
+				updown = false;
+				clockwise = false;
+				anticlockwise = false;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			//清空画布
+			function clearCanvas() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			//画棋盘
+			function DrawDesk() {
+				//棋盘的第一个字起始点为(40,70)，第二个为(40+400,70),依次类推
+				for(var k = 0; k < number; k++) {
+					//画纵线
+					for(var i = 0; i < 16; i++) {
+						ctx.strokeStyle = "grey";
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						var x1 = a * i; //a是小格子的边长
+						var y1 = 0;
+						var x2 = a * i;
+						var y2 = a * 15;
+						var x3 = x1,
+							y3 = y1,
+							x4 = x2,
+							y4 = y2;
+						if(leftslant == true) {
+							x3 = LeftSlantXY(x1, y1)[0];
+							y3 = LeftSlantXY(x1, y1)[1];
+							x4 = LeftSlantXY(x2, y2)[0];
+							y4 = LeftSlantXY(x2, y2)[1];
+						}
+						if(songjian == true) {
+							x3 = SongJianXY(x1, y1)[0];
+							y3 = SongJianXY(x1, y1)[1];
+							x4 = SongJianXY(x2, y2)[0];
+							y4 = SongJianXY(x2, y2)[1];
+						}
+						if(clockwise == true) {
+							x3 = ClockwiseRotateXY(x1, y1)[0];
+							y3 = ClockwiseRotateXY(x1, y1)[1];
+							x4 = ClockwiseRotateXY(x2, y2)[0];
+							y4 = ClockwiseRotateXY(x2, y2)[1];
+						}
+						if(anticlockwise == true) {
+							x3 = AnticlockwiseRotateXY(x1, y1)[0];
+							y3 = AnticlockwiseRotateXY(x1, y1)[1];
+							x4 = AnticlockwiseRotateXY(x2, y2)[0];
+							y4 = AnticlockwiseRotateXY(x2, y2)[1];
+						}
+						ctx.moveTo(startX + k * (a * 15 + dis) + x3, startY + y3);
+						ctx.lineTo(startX + k * (a * 15 + dis) + x4, startY + y4);
+						ctx.stroke();
+					}
+
+					//画横线
+					for(var i = 0; i < 16; i++) {
+						ctx.strokeStyle = "grey";
+						ctx.lineWidth = parseInt(1);
+						ctx.beginPath();
+						var x1 = 0;
+						var y1 = a * i;
+						var x2 = a * 15;
+						var y2 = a * i;
+						var x3 = x1,
+							y3 = y1,
+							x4 = x2,
+							y4 = y2;
+						if(leftslant == true) {
+							x3 = LeftSlantXY(x1, y1)[0];
+							y3 = LeftSlantXY(x1, y1)[1];
+							x4 = LeftSlantXY(x2, y2)[0];
+							y4 = LeftSlantXY(x2, y2)[1];
+						}
+						if(songjian == true) {
+							x3 = SongJianXY(x1, y1)[0];
+							y3 = SongJianXY(x1, y1)[1];
+							x4 = SongJianXY(x2, y2)[0];
+							y4 = SongJianXY(x2, y2)[1];
+						}
+						if(clockwise == true) {
+							x3 = ClockwiseRotateXY(x1, y1)[0];
+							y3 = ClockwiseRotateXY(x1, y1)[1];
+							x4 = ClockwiseRotateXY(x2, y2)[0];
+							y4 = ClockwiseRotateXY(x2, y2)[1];
+						}
+						if(anticlockwise == true) {
+							x3 = AnticlockwiseRotateXY(x1, y1)[0];
+							y3 = AnticlockwiseRotateXY(x1, y1)[1];
+							x4 = AnticlockwiseRotateXY(x2, y2)[0];
+							y4 = AnticlockwiseRotateXY(x2, y2)[1];
+						}
+						ctx.moveTo(startX + k * (a * 15 + dis) + x3, startY + y3);
+						ctx.lineTo(startX + k * (a * 15 + dis) + x4, startY + y4);
+						ctx.stroke();
+					}
+				}
+			}
+
+			//读名字
+			function GetName() {
+				var files = document.getElementById('file').files;
+				for(var i = 0; i < files.length; i++) {
+					var file = files[i];
+					var reader = new FileReader();
+					var content = null;
+					reader.readAsText(file);
+					var n = 0;
+					reader.onload = function(e) {
+						content = this.result;
+						DrawName(content, n);
+						n++;
+					}
+				}
+			}
+
+			//写名字
+			function DrawName(content, i) {
+				var lines = content.split('\r\n');
+				var count = 0;
+				ctx.strokeStyle = "blue";
+				ctx.lineWidth = 2;
+				for(var j = 0; j < lines.length; j++) {
+					var str = lines[j];
+					if(str == 'END') {
+						ctx.stroke();
+						count = 0;
+						continue;
+					}
+					var point = str.split(',');
+					if(point.length < 2) {
+						count = 1;
+						continue;
+					}
+					if(count == 1) {
+						ctx.beginPath();
+						var x = point[0] * a;
+						var y = point[1] * a;
+						var x0 = x,
+							y0 = y;
+						if(leftslant == true) {
+							x0 = LeftSlantXY(x, y)[0];
+							y0 = LeftSlantXY(x, y)[1];
+						}
+						if(songjian == true) {
+							x = x0;
+							y = y0;
+							x0 = SongJianXY(x, y)[0];
+							y0 = SongJianXY(x, y)[1];
+						}
+						if(leftright == true) {
+							x = x0;
+							y = y0;
+							x0 = a * 15 - x;
+						}
+						if(updown == true) {
+							x = x0;
+							y = y0;
+							y0 = a * 15 - y;
+						}
+						if(clockwise == true) {
+							x = x0;
+							y = y0;
+							x0 = ClockwiseRotateXY(x, y)[0];
+							y0 = ClockwiseRotateXY(x, y)[1];
+						}
+						if(anticlockwise == true) {
+							x = x0;
+							y = y0;
+							x0 = AnticlockwiseRotateXY(x, y)[0];
+							y0 = AnticlockwiseRotateXY(x, y)[1];
+						}
+						ctx.moveTo(x0 + startX + (a * 15 + dis) * i, y0 + startY);
+						count++;
+					} else {
+						var x = point[0] * a;
+						var y = point[1] * a;
+						var x0 = x,
+							y0 = y;
+						if(leftslant == true) {
+							x0 = LeftSlantXY(x, y)[0];
+							y0 = LeftSlantXY(x, y)[1];
+						}
+						if(songjian == true) {
+							x = x0;
+							y = y0;
+							x0 = SongJianXY(x, y)[0];
+							y0 = SongJianXY(x, y)[1];
+						}
+						if(leftright == true) {
+							x = x0;
+							y = y0;
+							x0 = a * 15 - x;
+						}
+						if(updown == true) {
+							x = x0;
+							y = y0;
+							y0 = a * 15 - y;
+						}
+						if(clockwise == true) {
+							x = x0;
+							y = y0;
+							x0 = ClockwiseRotateXY(x, y)[0];
+							y0 = ClockwiseRotateXY(x, y)[1];
+						}
+						if(anticlockwise == true) {
+							x = x0;
+							y = y0;
+							x0 = AnticlockwiseRotateXY(x, y)[0];
+							y0 = AnticlockwiseRotateXY(x, y)[1];
+						}
+						ctx.lineTo(x0 + startX + (a * 15 + dis) * i, y0 + startY);
+					}
+				}
+			}
+
+			function LeftSlant() {
+				leftslant = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function LeftSlantXY(x, y) {
+				x = x + tan15 * y - 15 * a / 2 * tan15;
+				y = y;
+				var point = [x, y];
+				return point;
+			}
+
+			function SongJian() {
+				songjian = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function SongJianXY(x, y) {
+				x = x;
+				y = y - x * tan15 + a * 15 / 2 * tan15;
+				var point = [x, y];
+				return point;
+			}
+
+			function Enlarge() {
+				var t = document.getElementById('times').value;
+				if(t == "")
+					return;
+				t = parseFloat(t);
+				clearCanvas();
+				a = a * t;
+				dis = t * dis;
+				DrawDesk();
+				GetName();
+			}
+
+			function Reduce() {
+				var t = document.getElementById('times').value;
+				if(t == "")
+					return;
+				t = parseFloat(t);
+				clearCanvas();
+				a = a / t;
+				dis = dis / t;
+				DrawDesk();
+				GetName();
+			}
+
+			function ClockwiseRotate() {
+				clockwise = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function AnticlockwiseRotate() {
+				anticlockwise = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function ClockwiseRotateXY(x, y) {
+				var tangle = document.getElementById('tangle').value;
+				if(tangle == "")
+					return;
+				tangle = parseFloat(tangle);
+				tangle = tangle * PI / 180;
+				x = x - a * 15 / 2;
+				y = y - a * 15 / 2;
+				var x1 = x * Math.cos(tangle) - y * Math.sin(tangle);
+				var y1 = x * Math.sin(tangle) + y * Math.cos(tangle);
+				var point = [x1 + a * 15 / 2, y1 + a * 15 / 2];
+				return point;
+			}
+
+			function AnticlockwiseRotateXY(x, y) {
+				var tangle = document.getElementById('tangle').value;
+				if(tangle == "")
+					return;
+				tangle = parseFloat(tangle);
+				tangle = tangle * PI / 180;
+				x = x - a * 15 / 2;
+				y = y - a * 15 / 2;
+				var x1 = x * Math.cos(tangle) + y * Math.sin(tangle);
+				var y1 = -x * Math.sin(tangle) + y * Math.cos(tangle);
+				var point = [x1 + a * 15 / 2, y1 + a * 15 / 2];
+				return point;
+			}
+
+			function LeftRightSymmetric() {
+				leftright = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function UpDownSymmetric() {
+				updown = true;
+				clearCanvas();
+				DrawDesk();
+				GetName();
+			}
+
+			function panLeft() {
+				var x = document.getElementById('length').value;
+				if(x == "")
+					return;
+				x = parseFloat(x);
+				clearCanvas();
+				startX = startX - x;
+				DrawDesk();
+				GetName();
+			}
+
+			function panUp() {
+				var y = document.getElementById('length').value;
+				if(y == "")
+					return;
+				y = parseFloat(y);
+				clearCanvas();
+				startY = startY - y;
+				DrawDesk();
+				GetName();
+			}
+
+			function panRight() {
+				var x = document.getElementById('length').value;
+				if(x == "")
+					return;
+				x = parseFloat(x);
+				clearCanvas();
+				startX = startX + x;
+				DrawDesk();
+				GetName();
+			}
+
+			function panDown() {
+				var y = document.getElementById('length').value;
+				if(y == "")
+					return;
+				y = parseFloat(y);
+				clearCanvas();
+				startY = startY + y;
+				DrawDesk();
+				GetName();
+			}
+		</script>
+	</body>
+
+</html>
