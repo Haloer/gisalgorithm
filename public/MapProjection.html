@@ -1,0 +1,288 @@
+<!Doctype html>
+<html>
+
+	<head>
+		<title>地图投影</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	</head>
+
+	<body style="margin-top: 0">
+		<a>选择地图文件(gen)：</a>
+		<input type="file" id="file" style="width: 200px;" />
+		<br />
+		<a>选择地图范围：</a>
+		<select style="height:25px;" id="type1" onchange="SelectChange()">
+			<option value="china">中国地图</option>
+			<option value="world">世界地图</option>
+		</select>
+		<a style="margin-left: 5px;margin-right: 5px;">||</a>
+		<a>选择地图投影：</a>
+		<select style="height:25px;" id="type2">
+			<option value="geography">地理坐标系</option>
+			<option value="lambert">兰伯特投影</option>
+			<option value="mercator">墨卡托投影</option>
+		</select>
+		<button onclick="ShowMap()" style="height:27px;margin-top: 6px;">显示地图</button>
+		<br/>
+		<a>大圆航线（默认是北京到巴黎）：</a>
+		<a>起点经度：</a><input id="x1" style="width:60px;" value="116.4" />
+		<a style="margin-left: 8px;">起点纬度：</a><input id="y1" style="width:60px;" value="39.8" />
+		<a>终点经度：</a><input id="x2" style="width:60px;" value="2.2" />
+		<a style="margin-left: 8px;">终点纬度：</a><input id="y2" style="width:60px;" value="48.52" />
+		<button onclick="DrawLine()" style="height:27px;width:60px;margin-top: 6px;margin-left:30px;">绘制</button>
+		<button onclick="ShowMap()" style="height:27px;width:60px;margin-top: 6px;margin-left:10px;">清除</button>
+		<canvas id="map" style="border:1px solid #000;margin-top:5px;"></canvas>
+		<script>
+			var canvas = document.getElementById('map');
+			var ctx = canvas.getContext('2d');
+			canvas.width = 1280;
+			canvas.height = 570;
+
+			var e2, e02, a, b;
+
+			function SortPoint(a, b) {
+				return b[0] - a[0];
+			}
+
+			//绘制大圆航线
+			function DrawLine() {
+				ctx.strokeStyle = "red";
+				var type1 = document.getElementById('type1').value;
+				var type2 = document.getElementById('type2').value;
+
+				var x1 = parseFloat(document.getElementById('x1').value);
+				var y1 = parseFloat(document.getElementById('y1').value);
+				var x2 = parseFloat(document.getElementById('x2').value);
+				var y2 = parseFloat(document.getElementById('y2').value);
+
+				var point = [
+					[x1, y1],
+					[x2, y2]
+				];
+				var addpoint;
+				var p1, p2;
+				var i = 0,
+					j = 1;
+				while(i < 6) {
+					for(var j = 0; j < point.length - 1; j = j + 2) {
+						p1 = point[j];
+						p2 = point[j + 1];
+						addpoint = DrawLineXY(p1[0], p1[1], p2[0], p2[1]);
+						point.splice(j + 1, 0, addpoint);
+					}
+					i++;
+				}
+
+				point.sort(SortPoint);
+
+				ctx.beginPath();
+				for(var i = 0; i < point.length; i++) {
+					var point0 = GetPoint(type1, type2, point[i][0], point[i][1]);
+					ctx.lineTo(point0[0], point0[1]);
+				}
+				ctx.stroke();
+			}
+
+			//计算大圆航线上的点坐标
+			function DrawLineXY(long1, lat1, long2, lat2) {
+				lat1 = lat1 * Math.PI / 180;
+				lat2 = lat2 * Math.PI / 180;
+				long1 = long1 * Math.PI / 180;
+				long2 = long2 * Math.PI / 180;
+				var Bx = Math.cos(lat2) * Math.cos(long2 - long1);
+				var By = Math.cos(lat2) * Math.sin(long2 - long1);
+				var latm = Math.atan2(Math.sin(lat1) + Math.sin(lat2), Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By));
+				var lonm = long1 + Math.atan2(By, Math.cos(lat1) + Bx);
+				return [lonm * 180 / Math.PI, latm * 180 / Math.PI];
+			}
+
+			//清空画布
+			function ClearCanvas() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			//下拉框的设置
+			function SelectChange() {
+				var select1 = document.getElementById('type1');
+				var select2 = document.getElementById('type2');
+				if(select1.value == "world") {
+					select2.length = 0;
+					select2.add(new Option("地理坐标系", "geography"));
+					select2.add(new Option("墨卡托投影", "mercator"));
+				} else {
+					select2.length = 0;
+					select2.add(new Option("地理坐标系", "geography"));
+					select2.add(new Option("兰伯特投影", "lambert"));
+					select2.add(new Option("墨卡托投影", "mercator"));
+				}
+			}
+
+			function ShowMap() {
+				var type1 = document.getElementById('type1').value;
+				var type2 = document.getElementById('type2').value;
+
+				if(type1 == "china") {
+					e2 = 0.006693421622966; //克拉索夫斯基椭球体的第一偏心率
+					e02 = 0.006738525414683; //克拉索夫斯基椭球体的第二偏心率
+					a = 6378245; //克拉索夫斯基椭球体的长半径
+					b = 6356863.0187730473; //克拉索夫斯基椭球体的短半径
+				} else {
+					a = 6378137; //wgs84基椭球体的长半径
+					b = 6356752.3142; //wgs84基椭球体的短半径
+					e2 = 0.00669437999013; //wgs84基椭球体的第一偏心率
+					e02 = 0.006739496742227; //wgs84基椭球体的第二篇心率
+				}
+
+				var file = document.getElementById('file').files[0];
+				var reader = new FileReader();
+				reader.readAsText(file);
+				var data = null;
+				reader.onload = function(e) {
+					data = this.result;
+					ClearCanvas();
+					DrawGird(type1, type2);
+					DrawMap(type1, type2, data);
+				}
+			}
+
+			//检查x是否是无穷大，如果是则变为9999
+			function CheckFinite(x) {
+				if(isFinite(x)) {
+					return x;
+				} else {
+					return 9999;
+				}
+			}
+
+			//绘制网格
+			function DrawGird(type1, type2) {
+				ctx.strokeStyle = "grey";
+				for(var i = -18; i <= 18; i++) {
+					for(var j = -36; j < 36; j++) {
+						var x = j * 5;
+						var y = i * 5;
+						var point1 = GetPoint(type1, type2, x, y);
+						var point2 = GetPoint(type1, type2, x + 5, y);
+						ctx.beginPath();
+						ctx.moveTo(CheckFinite(point1[0]), CheckFinite(point1[1]));
+						ctx.lineTo(CheckFinite(point2[0]), CheckFinite(point2[1]));
+						ctx.stroke();
+					}
+				}
+
+				for(var i = -36; i <= 36; i++) {
+					for(var j = -18; j < 18; j++) {
+						var x = i * 5;
+						var y = j * 5;
+						var point1 = GetPoint(type1, type2, x, y);
+						var point2 = GetPoint(type1, type2, x, y + 5);
+						ctx.beginPath();
+						ctx.moveTo(CheckFinite(point1[0]), CheckFinite(point1[1]));
+						ctx.lineTo(CheckFinite(point2[0]), CheckFinite(point2[1]));
+						ctx.stroke();
+					}
+				}
+			}
+
+			function DrawMap(type1, type2, data) {
+				ctx.strokeStyle = "black";
+				data = data.split('\r\n');
+				var count = 0;
+				for(var i = 0; i < data.length; i++) {
+					var line = data[i];
+					if(line == "END") {
+						ctx.stroke();
+						count = 0;
+						continue;
+					}
+					var point = line.split(',');
+					if(point.length < 2) {
+						count = 1;
+						continue;
+					}
+					if(count == 1) {
+						ctx.beginPath();
+						var t = GetPoint(type1, type2, point[0], point[1]);
+						ctx.moveTo(t[0], t[1]);
+						count++;
+					} else {
+						var t = GetPoint(type1, type2, point[0], point[1]);
+						ctx.lineTo(t[0], t[1]);
+					}
+				}
+			}
+
+			function MercatorProjectionXY(L, B) {
+				L = L * Math.PI / 180;
+				B = B * Math.PI / 180;
+				var B0 = 0;
+				var L0 = 0;
+				var e = Math.sqrt(e2);
+				var K = (a * a / b) / Math.sqrt(1 + e02 * Math.cos(B0) * Math.cos(B0)) * Math.cos(B0);
+				var X = K * Math.log(Math.tan(Math.PI / 4 + B / 2) * Math.pow(((1 - e * Math.sin(B)) / (1 + e * Math.sin(B))), e / 2));
+				var Y = K * (L - L0);
+				return [Y, X];
+			}
+
+			function LambertProjectionXY(L, B) {
+				L = L * Math.PI / 180;
+				B = B * Math.PI / 180;
+
+				var b1 = 20 * Math.PI / 180; //兰伯特投影的标准纬线1
+				var b2 = 40 * Math.PI / 180; //兰伯特投影的标准纬线2
+				var l0 = 105 * Math.PI / 180; //原点经度
+				var b0 = 0; //原点纬度
+
+				var m = Math.cos(B) / Math.sqrt(1 - e2 * Math.sin(B) * Math.sin(B));
+				var mb1 = Math.cos(b1) / Math.sqrt(1 - e2 * Math.sin(b1) * Math.sin(b1));
+				var mb2 = Math.cos(b2) / Math.sqrt(1 - e2 * Math.sin(b2) * Math.sin(b2));
+				var e = Math.sqrt(e2);
+				var temp = Math.tan(Math.PI / 4 - B / 2);
+				var t = Math.tan(Math.PI / 4 - B / 2) / Math.pow(((1 - e * Math.sin(B)) / (1 + e * Math.sin(B))), e / 2);
+				var tb1 = Math.tan(Math.PI / 4 - b1 / 2) / Math.pow(((1 - e * Math.sin(b1)) / (1 + e * Math.sin(b1))), e / 2);
+				var tb2 = Math.tan(Math.PI / 4 - b2 / 2) / Math.pow(((1 - e * Math.sin(b2)) / (1 + e * Math.sin(b2))), e / 2);
+				var n = Math.log(mb1 / mb2) / Math.log(tb1 / tb2);
+				var F = mb1 / (n * Math.pow(tb1, n));
+				var r = a * F * Math.pow(t, n);
+
+				//计算r0，需要计算t0
+				var t0 = Math.tan(Math.PI / 4 - b0 / 2) / Math.pow((1 - e * Math.sin(b0)) / (1 + e * Math.sin(b0)), e / 2);
+				var r0 = a * F * Math.pow(t0, n);
+
+				var theta = n * (L - l0);
+
+				var X = r0 - r * Math.cos(theta);
+				var Y = r * Math.sin(theta);
+				return [Y, X];
+			}
+
+			function GetPoint(type1, type2, x, y) {
+				if(type1 == "china" && type2 == "geography") {
+					return [(x - 40) * 10, canvas.height - y * 10];
+				}
+				if(type1 == "china" && type2 == "lambert") {
+					var point = LambertProjectionXY(x, y);
+					var x0 = (point[0] - 5000000) / 10100 + 1100;
+					var y0 = canvas.height - (point[1] - 1000000) / 10100 - 60;
+					return [x0, y0];
+				}
+				if(type1 == "china" && type2 == "mercator") {
+					var point = MercatorProjectionXY(x, y);
+					var x0 = (point[0] - 13700000) / 12000 + 780;
+					var y0 = canvas.height - (point[1] - 5700000) / 12000 - 450;
+					return [x0, y0];
+				}
+				if(type1 == "world" && type2 == "geography") {
+					return [(x - 40) * 3 + 750, canvas.height - y * 3 - 300];
+				}
+				if(type1 == "world" && type2 == "mercator") {
+					var point = MercatorProjectionXY(x, y);
+					var x0 = (point[0] - 13700000) / 70000 + 780;
+					var y0 = canvas.height - (point[1] - 5700000) / 70000 - 390;
+					return [x0, y0];
+				}
+			}
+		</script>
+	</body>
+
+</html>
