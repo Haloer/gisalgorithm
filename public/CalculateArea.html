@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title>多边形面积计算</title>
+		<script type="text/javascript" src="javascripts/echarts.js"></script>
+	</head>
+
+	<body>
+		<a>添加地图：</a>
+		<input type="file" id="file" style="width: 200px;" />
+		<a>选择投影：</a>
+		<select style="height:25px;margin-right: 20px" id="type1">
+			<option value="mercator">墨卡托投影</option>
+			<option value="geography">地理坐标系</option>
+		</select>
+		<button onclick="ShowMap()" style="height:27px;width:60px;margin-top: 6px;">显示</button>
+		<br/>
+		<canvas id="map" style="border:1px solid #000;margin-top:20px;"></canvas>
+		<div style="position: absolute; border: 1px dashed #000; left:660px; height: 580px;width: 0px; top :30px;"></div>
+		<div style="position: absolute; left:700px; top:18px;">
+			<a>面积计算：</a>
+			<select style="height:25px;margin-right: 20px;margin-left: 30px" id="type2">
+				<option value="mercator">墨卡托投影</option>
+				<option value="geography">地理坐标系</option>
+			</select>
+			<button onclick="AreaCaculate()" style="height:27px;width:60px">计算</button>
+			<div id="main" style="width: 620px;height:570px;position:absolute;margin-top:30px;"></div>
+		</div>
+	</body>
+	<script>
+		var canvas = document.getElementById('map');
+		var ctx = canvas.getContext('2d');
+		canvas.width = 600;
+		canvas.height = 550;
+
+		var e2 = 0.006693421622966; //克拉索夫斯基椭球体的第一偏心率
+		var e02 = 0.006738525414683; //克拉索夫斯基椭球体的第二偏心率
+		var a = 6378245; //克拉索夫斯基椭球体的长半径
+		var b = 6356863.0187730473; //克拉索夫斯基椭球体的短半径
+
+		function AreaCaculate() {
+			var type = document.getElementById('type2').value;
+			var file = document.getElementById('file').files[0];
+			var reader = new FileReader();
+			reader.readAsText(file);
+			var data = null;
+			reader.onload = function(e) {
+				data = this.result;
+				data = data.split('\r\n');
+				var nowcity = [];
+				var number = 1;
+				var cityarea = [];
+				var area = 0;
+				var sum = 0;
+				for(var i = 0; i < data.length; i++) {
+					var line = data[i];
+					if(data[i - 1] == "END" && line == "END")
+						break;
+					if(line == "END") {
+						if(type == "mercator")
+							area = parseInt(PolygonArea(nowcity) / 1000000);
+						else
+							area = parseInt(geographyArea(nowcity) / 1000000);
+						cityarea[number - 1] += area;
+						sum += area;
+						continue;
+					}
+					var point = line.split(',');
+					if(point.length < 2) {
+						number = parseInt(line);
+						area = 0;
+						if(cityarea.length != number) {
+							cityarea[number - 1] = 0;
+						}
+
+						nowcity = [];
+						if(isNaN(number))
+							break;
+						continue;
+					}
+					nowcity.push(point);
+				}
+				showData(cityarea, sum);
+			}
+		}
+
+		function geographyArea(data) {
+			var T = 0;
+			var B0 = 90;
+			for(var i = 0; i < data.length; i++) {
+				var y = data[i][0];
+				var x = data[i][1];
+				data[i] = invMercatorXY(y, x);
+				if(data[i][1] < B0)
+					B0 = data[i][1];
+			}
+			B0 = B0 * Math.PI / 180;
+			for(var i = 0; i < data.length - 1; i++) {
+				var B1 = data[i][1] * Math.PI / 180;
+				var B2 = data[i + 1][1] * Math.PI / 180;
+				var L1 = data[i][0] * Math.PI / 180;
+				var L2 = data[i + 1][0] * Math.PI / 180;
+				var deta = B0 - (B1 + B2) / 2;
+				var detam = ((B1 + B2) / 2 + B0) / 2;
+
+				var K = 2 * a * a * (1 - e2) * (L2 - L1);
+				var A = 1 + 1 / 2 * e2 + 3 / 8 * e2 * e2 + 5 / 16 * e2 * e2 * e2;
+				var B = 1 / 6 * e2 + 3 / 16 * e2 * e2 + 3 / 16 * e2 * e2 * e2;
+				var C = 3 / 80 * e2 * e2 + 1 / 16 * e2 * e2 * e2;
+				var D = 1 / 112 * e2 * e2 * e2;
+
+				T += K * (A * Math.sin(deta / 2) * Math.cos(detam) -
+					B * Math.sin(3 * deta / 2) * Math.cos(3 * detam) +
+					C * Math.sin(5 * deta / 2) * Math.cos(5 * detam) -
+					D * Math.sin(7 * deta / 2) * Math.cos(7 * detam));
+			}
+			return Math.abs(T);
+		}
+
+		function showData(data, sum) {
+			var myChart = echarts.init(document.getElementById('main'));
+			var option = {
+				title: {
+					text: '总面积：' + sum + '平方千米',
+					subtext: '* 数据为了显示美观经过取整处理，单位为平方千米',
+					x: '8%'
+				},
+				tooltip: {
+					trigger: 'axis',
+					axisPointer: {
+						type: 'shadow'
+					}
+				},
+				grid: {
+					left: '2%',
+					containLabel: true
+				},
+				xAxis: {
+					type: 'value',
+					boundaryGap: [0, 0.01]
+				},
+				yAxis: {
+					type: 'category',
+					data: ["连云港", "徐州", "宿迁", "盐城", "淮安", "泰州", "南通", "扬州", "南京", "镇江", "常州", "无锡", "苏州"]
+				},
+				series: [{
+					name: '面积',
+					type: 'bar',
+					data: data,
+					itemStyle: {
+						normal: {
+							color: function(params) {
+								// build a color map as your need.
+								var colorList = [
+									'#C1232B', '#B5C334', '#FCCE10', '#E87C25', '#27727B',
+									'#FE8463', '#9BCA63', '#FAD860', '#F3A43B', '#60C0DD',
+									'#D7504B', '#C6E579', '#F4E001', '#F0805A', '#26C0C0'
+								];
+								return colorList[params.dataIndex]
+							},
+							label: {
+								show: true,
+								position: 'right',
+								formatter: '{b}:{c}km^2'
+							}
+						}
+					},
+				}]
+			};
+
+			// 使用刚指定的配置项和数据显示图表。	
+			myChart.setOption(option);
+		}
+
+		function PolygonArea(data) {
+			var s = data[0][1] * (data[data.length - 1][0] - data[1][0]);
+			for(var i = 1; i < data.length; i++) {
+				s += data[i][1] * (data[i - 1][0] - data[(i + 1) % data.length][0])
+			}
+			return Math.abs(s / 2);
+		}
+
+		//清空画布
+		function ClearCanvas() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+
+		function ShowMap() {
+			var type = document.getElementById('type1').value;
+			var file = document.getElementById('file').files[0];
+			var reader = new FileReader();
+			reader.readAsText(file);
+			var data = null;
+			reader.onload = function(e) {
+				data = this.result;
+				ClearCanvas();
+				DrawMap(type, data);
+			}
+		}
+
+		function DrawMap(type, data) {
+			ctx.strokeStyle = "black";
+			data = data.split('\r\n');
+			var count = 0;
+			for(var i = 0; i < data.length; i++) {
+				var line = data[i];
+				if(line == "END") {
+					ctx.stroke();
+					count = 0;
+					continue;
+				}
+				var point = line.split(',');
+				if(point.length < 2) {
+					count = 1;
+					continue;
+				}
+				if(count == 1) {
+					ctx.beginPath();
+					var t = GetPoint(type, point[0], point[1]);
+					ctx.moveTo(t[0], t[1]);
+					count++;
+				} else {
+					var t = GetPoint(type, point[0], point[1]);
+					ctx.lineTo(t[0], t[1]);
+				}
+			}
+		}
+
+		function invMercatorXY(y, x) {
+			var B0 = 0;
+			var L0 = 0;
+			var e = Math.sqrt(e2);
+			var K = (a * a / b) / Math.sqrt(1 + e02 * Math.cos(B0) * Math.cos(B0)) * Math.cos(B0);
+			var L = parseFloat(y) / K + L0;
+			var B = 32 * Math.PI / 180;
+			var t = 0;
+			while(1) {
+				t = Math.PI / 2 - 2 * Math.atan(Math.exp(-x / K) * Math.exp((e / 2) * Math.log(1 - e * Math.sin(B) / (1 + e * Math.sin(B)))));
+				if(Math.abs(B - t) < 0.00000001)
+					break;
+				else
+					B = t;
+			}
+			return [L / Math.PI * 180, B / Math.PI * 180];
+		}
+
+		function GetPoint(type, x, y) {
+			if(type == "mercator") {
+				return [(x - 13200000) / 1100 + 240, canvas.height - (y - 4150000) / 1100 - 530];
+			}
+			if(type == "geography") {
+				var point = invMercatorXY(x, y);
+				return [(point[0] - 118) * 100 + 180, canvas.height - (point[1] - 30) * 100];
+			}
+		}
+	</script>
+	</body>
+
+</html>
