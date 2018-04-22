@@ -24,3 +24,7 @@ https://haloer.github.io/gisalgorithm/public/DrawMyName.html
 MapProjection:
 
 https://haloer.github.io/gisalgorithm/public/MapProjection.html
+
+DouglasPeucker:
+
+https://haloer.github.io/gisalgorithm/public/DouglasPeucker.html
