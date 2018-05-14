@@ -1,0 +1,197 @@
+<!Doctype html>
+<html>
+
+<head>
+    <title>四叉树</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+
+<body>
+    <a>添加数据 >></a>
+    <a>选择输入文件：</a><input type="file" id="file" style="width: 200px;" />
+    <button onclick="ShowData()">显示</button>
+    <button onclick="ReadFile()">编码</button>
+    <br/>
+    <div id="result" style="margin-top: 12px;line-height:30px"></div>
+    <script>
+        var array = [];
+        var rows, cols;
+        var result = [];
+
+        function ShowData() {
+            var file = document.getElementById('file').files[0];
+            var reader = new FileReader();
+            reader.readAsText(file);
+            var data = null;
+            reader.onload = function (e) {
+                data = this.result;
+                document.getElementById('result').innerHTML = "<a>显示数据 >></a><br/>"
+                document.getElementById('result').innerText += data;
+            }
+        }
+
+        //判断在array的[x1,x2)，[y1,y2)的数组是否数据相同
+        function Check(x1, x2, y1, y2) {
+            var value = array[x1][y1];
+            for (var i = x1; i < x2; i++) {
+                for (var j = y1; j < y2; j++) {
+                    if (array[i][j] != value)
+                        return -1;
+                }
+            }
+            return value;
+        }
+
+        //十进制转二进制数组
+        function ten2two(x) {
+            var res = [];
+            var n = x;
+            if (x == 0) {
+                res.push(0)
+                return res;
+            }
+            while (n != 0) {
+                res.push(n % 2);
+                n = parseInt(n / 2);
+            }
+            return res;
+        }
+
+        //i，j行列号转为值
+        function rowcol2code(i, j, c) {
+            var interval = rows / Math.pow(2, c);
+            var x = parseInt(i / interval);
+            var y = parseInt(j / interval);
+
+            var x = ten2two(x);
+            var y = ten2two(y);
+            var d = rows;
+            var n = 0;
+            while (d != 1) {
+                d = d / 2;
+                n++;
+            }
+
+            if (x.length < n) {
+                var xl = x.length;
+                for (var a = 0; a < n - xl; a++) {
+                    x.push(0);
+                }
+            }
+            if (y.length < n) {
+                var yl = y.length;
+                for (var a = 0; a < n - yl; a++) {
+                    y.push(0);
+                }
+            }
+
+            var res = "";
+            for (var a = x.length - 1; a >= 0; a--) {
+                res += (2 * x[a] + y[a]).toString();
+            }
+
+            return res;
+        }
+
+        //x,y为左上角点的行列号，c为层数
+        function FourTree(x, y, c) {
+            var interval = rows / Math.pow(2, c);
+            if (interval == 0)
+                return;
+            var v1, v2, v3, v4;
+            if ((v1 = Check(x, x + interval, y, y + interval)) != -1) {
+                var code = rowcol2code(x, y, c);
+                var r = {
+                    code: code,
+                    range: c,
+                    value: v1
+                }
+                result.push(r);
+            }
+            else {
+                FourTree(x, y, c + 1);
+            }
+            if ((v2 = Check(x + interval, x + 2 * interval, y, y + interval)) != -1) {
+                var code = rowcol2code(x + interval, y, c);
+                var r = {
+                    code: code,
+                    range: c,
+                    value: v2
+                }
+                result.push(r);
+            }
+            else {
+                FourTree(x + interval, y, c + 1);
+            }
+            if ((v3 = Check(x, x + interval, y + interval, y + 2 * interval)) != -1) {
+                var code = rowcol2code(x, y + interval, c);
+                var r = {
+                    code: code,
+                    range: c,
+                    value: v3
+                }
+                result.push(r);
+            }
+            else {
+                FourTree(x, y + interval, c + 1);
+            }
+            if ((v4 = Check(x + interval, x + 2 * interval, y + interval, y + 2 * interval)) != -1) {
+                var code = rowcol2code(x + interval, y + interval, c);
+                var r = {
+                    code: code,
+                    range: c,
+                    value: v4
+                }
+                result.push(r);
+            }
+            else {
+                FourTree(x + interval, y + interval, c + 1);
+            }
+        }
+
+        function ReadFile() {
+            var file = document.getElementById('file').files[0];
+            var reader = new FileReader();
+            reader.readAsText(file);
+            var data = null;
+            reader.onload = function (e) {
+                data = this.result;
+                data = data.split('\r\n');
+                var info = data[0].split(',');
+                rows = info[0];
+                cols = info[1];
+                for (var i = 1; i < data.length; i++) {
+                    var line = data[i];
+                    if (line == "")
+                        continue;
+                    line = line.split(',');
+                    var cur = [];
+                    for (var j = 0; j < line.length; j++) {
+                        if (line[j] == "")
+                            continue;
+                        var n = 0;
+                        while (line[j][n] == " ")
+                            n++;
+                        var number = parseInt(line[j].slice(n, line[j].length));
+                        cur.push(number);
+                    }
+                    array.push(cur);
+                }
+                FourTree(0, 0, 1);
+                WriteResult();
+                result = [];
+            }
+        }
+        function WriteResult() {
+            var text = document.getElementById('result');
+            text.innerHTML = "";
+            text.innerHTML = "<a>编码结果 >></a><br/>";
+            for (var i = 0; i < result.length; i++) {
+                text.innerHTML += "<a>（ " + result[i].code + " , " + result[i].range + " , " + result[i].value + " ）";
+                text.innerHTML += "</a><br/>";
+            }
+        }
+    </script>
+</body>
+
+</html>
