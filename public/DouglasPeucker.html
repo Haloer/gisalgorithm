@@ -16,7 +16,7 @@
     <br>
     <a>压缩数据 >></a>
     <a>输入压缩等级：</a>
-    <input id="number" style="height: 21px; width: 88px;" placeholder="1800以上为佳" />
+    <input id="number" style="height: 21px; width: 88px;"/>
     <button onclick="CutDown=true;ShowMap()" style="height:27px;width:90px;margin-top: 6px;">压缩并显示</button>
     <a style="margin-left:18px">压缩率为：</a>
     <a id="result" style="color: red">未压缩</a>
@@ -52,7 +52,7 @@
             var city = [];
             cutdowndata = [];
             curNumber = 0;
-            var times = parseInt(document.getElementById('number').value);
+            var times = parseInt(document.getElementById('number').value)*36;
             for (var i = 0; i < data.length - 1; i++) {
                 var line = data[i];
                 if (line.length == 0)
