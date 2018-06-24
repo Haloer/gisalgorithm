@@ -21,9 +21,17 @@ https://haloer.github.io/gisalgorithm/public/BestWorkList.html
 ======================
 https://haloer.github.io/gisalgorithm/public/DrawMyName.html
 ***
+**_DrawMyName2.html:_**
+======================
+https://haloer.github.io/gisalgorithm/public/DrawMyName_2.html
+***
 **_MapProjection.html:_**
 ======================
 https://haloer.github.io/gisalgorithm/public/MapProjection.html
+***
+**_CalculateArea.html:_**
+======================
+https://haloer.github.io/gisalgorithm/public/CalculateArea.html
 ***
 **_DouglasPeucker.html:_**
 ======================
