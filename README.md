@@ -49,3 +49,7 @@ https://haloer.github.io/gisalgorithm/public/LeftTurn.html
 ======================
 https://haloer.github.io/gisalgorithm/public/Symbol.html
 ***
+**_Vector2Raster.html:_**
+======================
+https://haloer.github.io/gisalgorithm/public/Vector2Raster.html
+***
